@@ -1,0 +1,6 @@
+spring:
+  application:
+    name: ai-langchain4j
+  config:
+    activate:
+      on-profile: local
