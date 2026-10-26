@@ -1,34 +1,40 @@
 package cn.test.ailangchain4j;
 import dev.langchain4j.community.model.dashscope.QwenChatModel;
-import dev.langchain4j.data.message.*;
-import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.output.FinishReason;
 import dev.langchain4j.model.output.TokenUsage;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import dev.langchain4j.service.AiServices;
+import dev.langchain4j.service.Result;
+import dev.langchain4j.service.SystemMessage;
 
 public class test {
-    public static void main(String args[]) throws IOException{
+    public interface Friend {
+//        @SystemMessage("你是一只猫娘")
+        Result<String> chat(String userMessage);
+    }
+
+    public static void main(String[] args) {
         String apiKey = System.getenv("DASHSCOPE_API_KEY");
         if (apiKey == null || apiKey.isBlank()) {
             throw new IllegalStateException("Set the DASHSCOPE_API_KEY environment variable before running this example.");
         }
-        //使用qwen模型
+
         QwenChatModel model = QwenChatModel.builder()
                 .apiKey(apiKey)
                 .modelName("qwen-plus")
                 .build();
 
-        List<ChatMessage> messages = new ArrayList<>();
-        messages.add(UserMessage.from("你好"));
-        ChatResponse response = model.chat(messages);
+//        Friend friend = AiServices.create(Friend.class, model);
+        Friend friend = AiServices.builder(Friend.class)
+                .chatModel(model)
+                .systemMessageProvider(chatMemoryId -> "")
+                .build();
+        Result<String> result = friend.chat("你好啊");
+        String answer = result.content();
+        TokenUsage usage = result.tokenUsage();
+        FinishReason reason = result.finishReason();
 
-        String text = response.aiMessage().text();
-        TokenUsage usage = response.metadata().tokenUsage();
-        FinishReason reason = response.metadata().finishReason();
-
-        System.out.printf("输入 %d tokens，输出 %d tokens，停止原因 %s%n",usage.inputTokenCount(), usage.outputTokenCount(), reason);
-        System.out.println(text);
+        System.out.printf("输入 %d tokens，输出 %d tokens，停止原因 %s%n",
+                usage.inputTokenCount(), usage.outputTokenCount(), reason);
+        System.out.println(answer);
     }
 }
