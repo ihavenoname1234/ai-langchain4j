@@ -1,20 +1,20 @@
 package cn.test.ailangchain4j;
-
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.community.model.dashscope.QwenChatModel;
+import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.request.json.JsonObjectSchema;
 import dev.langchain4j.model.chat.request.json.JsonStringSchema;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.MemoryId;
+import dev.langchain4j.service.Result;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.memory.ChatMemoryAccess;
-import dev.langchain4j.service.tool.ToolArgumentsErrorHandler;
-import dev.langchain4j.service.tool.ToolExecutionErrorHandler;
-import dev.langchain4j.service.tool.ToolExecutor;
+import dev.langchain4j.service.tool.*;
 
+import java.util.List;
 import java.util.Map;
 
 public class ProgrammaticandDynamicTools {
@@ -23,11 +23,12 @@ public class ProgrammaticandDynamicTools {
 
     private static final Map<String, Booking> BOOKINGS = Map.of(
             "B-12345", new Booking("B-12345", "张三", "孙二娘酒店"),
-                "A-35673",new Booking("A-35673","克喵喵","dg酒店")
+                "A-35673",new Booking("A-35673","克喵喵","发福酒店")
     );
 
     interface Assistant extends ChatMemoryAccess {
         String chat(@MemoryId int memoryId, @UserMessage String message);
+        Result<String> chat(String userMessage);
     }
     private static Booking getBooking(String bookingNumber) {
         Booking booking = BOOKINGS.get(bookingNumber);
@@ -73,15 +74,32 @@ public class ProgrammaticandDynamicTools {
                 throw new IllegalArgumentException("Invalid tool arguments.", e);
             }
         };
+        ToolProvider toolProvider = request -> {
+            String message = request.userMessage().singleText();
 
+            if (message.contains("预订") || message.contains("booking")) {
+                return ToolProviderResult.builder()
+                        .add(toolSpecification, toolExecutor)
+                        .build();
+            }
+
+            return ToolProviderResult.builder().build();
+        };
         Assistant assistant = AiServices.builder(Assistant.class)
                 .chatModel(model)
                 .chatMemoryProvider(memoryId -> MessageWindowChatMemory.withMaxMessages(10))
+                .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(
+                        toolExecutionRequest,
+                        "Error: there is no tool called " + toolExecutionRequest.name()))
+                .toolProvider(toolProvider)
                 .toolArgumentsErrorHandler(ToolArgumentsErrorHandler.sendExceptionMessageToLlm())
                 .toolExecutionErrorHandler(ToolExecutionErrorHandler.failInvocationUnlessVisibleToLlm())
-                .tools(Map.of(toolSpecification, toolExecutor))
                 .build();
         String answer=assistant.chat(1,"帮我查询预订 A-35673 的详情");
-        System.out.println(answer);
+        System.out.println(answer+"\n");
+        Result<String> result = assistant.chat("取消我的预订 B-12345");
+        String answer2 = result.content();
+        List<ToolExecution> toolExecutions = result.toolExecutions();
+        System.out.println(answer2);
     }
 }
