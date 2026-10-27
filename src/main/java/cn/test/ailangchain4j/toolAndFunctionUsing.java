@@ -1,5 +1,6 @@
 package cn.test.ailangchain4j;
 
+import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 import dev.langchain4j.community.model.dashscope.QwenChatModel;
 import dev.langchain4j.service.AiServices;
@@ -13,7 +14,7 @@ public class toolAndFunctionUsing {
 
     public static class Calculator {
         @Tool("Sums 2 given numbers")
-        double sum(double a, double b) {
+        double sum(@P("a number") double a,@P("another number") double b) {
             if (Double.isNaN(a) || Double.isNaN(b)) {
                 throw new IllegalArgumentException("参数必须是有效数字");
             }
@@ -21,7 +22,7 @@ public class toolAndFunctionUsing {
         }
 
         @Tool("Returns a square root of a given number")
-        double squareRoot(double x) {
+        double squareRoot(@P("一个非负数") double x) {
             if (Double.isNaN(x) || x < 0) {
                 throw new IllegalArgumentException("平方根参数必须是非负数");
             }
