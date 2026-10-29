@@ -3,6 +3,7 @@ package cn.test.ailangchain4j;
 import dev.langchain4j.community.model.dashscope.QwenChatModel;
 import dev.langchain4j.data.document.Document;
 import dev.langchain4j.data.document.loader.FileSystemDocumentLoader;
+import dev.langchain4j.data.document.splitter.DocumentSplitters;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.embedding.EmbeddingModel;
@@ -34,6 +35,7 @@ public class RAG {
         EmbeddingStoreIngestor ingestor = EmbeddingStoreIngestor.builder()
                 .embeddingModel(embeddingModel)
                 .embeddingStore(embeddingStore)
+                .documentSplitter(DocumentSplitters.recursive(1000, 200))
                 .build();
         ingestor.ingest(documents);
 
