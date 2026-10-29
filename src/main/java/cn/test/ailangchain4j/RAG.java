@@ -47,7 +47,7 @@ public class RAG {
                         .embeddingModel(embeddingModel)
                         .build())
                 .build();
-        String answer=assistant.chat("请看看该文件");
+        String answer=assistant.chat("请看看这个文件");
         System.out.println(answer);
     }
 
